@@ -1,0 +1,14 @@
+{
+  "name": "boken",
+  "version": "1.0.0",
+  "description": "Convert images to bokeh blur — epic webapp",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

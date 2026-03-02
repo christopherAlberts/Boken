@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Boken — Bokeh Blur</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <h1 class="logo">Boken</h1>
+      <p class="tagline">Transform any image with bokeh blur</p>
+    </header>
+
+    <main class="main">
+      <section class="upload-zone" id="uploadZone" data-state="empty">
+        <input type="file" id="fileInput" accept="image/*" hidden />
+        <input type="url" id="urlInput" class="url-input" placeholder="Or paste image URL..." />
+        <div class="upload-content">
+          <div class="upload-icon">📷</div>
+          <p class="upload-text">Drop an image here, or <button type="button" class="btn-link" id="browseBtn">browse</button></p>
+          <p class="upload-hint">PNG, JPEG, WebP • Max 20MB</p>
+        </div>
+      </section>
+
+      <section class="workspace hidden" id="workspace">
+        <div class="viewer">
+          <div class="comparison" id="comparison">
+            <div class="comparison-before" id="comparisonBefore">
+              <img id="originalImg" alt="Original" />
+            </div>
+            <div class="comparison-after" id="comparisonAfter">
+              <canvas id="resultCanvas"></canvas>
+            </div>
+            <div class="comparison-slider" id="comparisonSlider">
+              <div class="comparison-handle"></div>
+            </div>
+            <div class="rendering-overlay" id="renderingOverlay" aria-hidden="true">Applying bokeh…</div>
+          </div>
+        </div>
+
+        <aside class="controls">
+          <div class="control-group">
+            <label>
+              <span class="label-text">Blur strength</span>
+              <span class="label-value" id="blurValue">12</span>
+            </label>
+            <input type="range" id="blurStrength" min="2" max="40" value="12" />
+          </div>
+          <div class="control-group">
+            <label>
+              <span class="label-text">Bokeh size</span>
+              <span class="label-value" id="bokehSizeValue">8</span>
+            </label>
+            <input type="range" id="bokehSize" min="2" max="24" value="8" />
+          </div>
+          <div class="control-group">
+            <label>
+              <span class="label-text">Highlight threshold</span>
+              <span class="label-value" id="thresholdValue">0.65</span>
+            </label>
+            <input type="range" id="threshold" min="0.2" max="0.95" step="0.05" value="0.65" />
+          </div>
+          <div class="control-group">
+            <label>
+              <span class="label-text">Bokeh intensity</span>
+              <span class="label-value" id="intensityValue">1.2</span>
+            </label>
+            <input type="range" id="intensity" min="0.2" max="2.5" step="0.1" value="1.2" />
+          </div>
+          <div class="control-group">
+            <label>
+              <span class="label-text">Shape</span>
+            </label>
+            <select id="bokehShape">
+              <option value="circle">Circle</option>
+              <option value="hexagon">Hexagon</option>
+              <option value="pentagon">Pentagon</option>
+            </select>
+          </div>
+
+          <div class="presets">
+            <span class="presets-label">Presets</span>
+            <div class="preset-btns">
+              <button type="button" class="preset-btn" data-preset="portrait">Portrait</button>
+              <button type="button" class="preset-btn" data-preset="landscape">Landscape</button>
+              <button type="button" class="preset-btn" data-preset="dramatic">Dramatic</button>
+              <button type="button" class="preset-btn" data-preset="subtle">Subtle</button>
+              <button type="button" class="preset-btn" data-preset="vintage">Vintage</button>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="button" class="btn btn-secondary" id="newImageBtn">New image</button>
+            <button type="button" class="btn btn-primary" id="downloadPng">Download PNG</button>
+            <button type="button" class="btn btn-primary" id="downloadJpeg">Download JPEG</button>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Boken · Bokeh blur in the browser · No data leaves your device</p>
+    </footer>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
