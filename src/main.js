@@ -160,7 +160,7 @@ function setupComparisonSlider() {
 
 // Upload zone
 uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.setAttribute('data-state', 'over'); });
-uploadZone.addEventListener('dragleave', () => uploadZone.setAttribute('data-state', 'empty'););
+uploadZone.addEventListener('dragleave', () => uploadZone.setAttribute('data-state', 'empty'));
 uploadZone.addEventListener('drop', (e) => {
   e.preventDefault();
   uploadZone.setAttribute('data-state', 'empty');
