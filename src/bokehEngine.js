@@ -268,6 +268,7 @@ function extractAndDrawBokeh(ctxBlurred, ctxOut, width, height, options, origina
     softBokeh = 0,
     saturationWeight = 0,
     bokehDensity = 1,
+    maxBokehCount = 800,
     sampleDetail = 0.5,
     thresholdSoftness = 0,
     bokehRotation = 0,
@@ -303,7 +304,8 @@ function extractAndDrawBokeh(ctxBlurred, ctxOut, width, height, options, origina
   }
 
   spots.sort((a, b) => (b.score !== undefined ? b.score : b.brightness) - (a.score !== undefined ? a.score : a.brightness));
-  const maxSpots = Math.max(100, Math.min(1500, Math.round(800 * bokehDensity)));
+  const baseMax = Math.max(50, Math.min(2500, Math.round((maxBokehCount ?? 800) * bokehDensity)));
+  const maxSpots = baseMax;
   const toDraw = spots.slice(0, maxSpots);
 
   // Size variation: 0 = uniform by brightness only; 1 = wide range + randomness (different sizes at once)
@@ -371,6 +373,7 @@ export function renderBokeh(image, outputCanvas, options = {}) {
     blurQuality = 'standard',
     saturationWeight = 0,
     bokehDensity = 1,
+    maxBokehCount = 800,
     sampleDetail = 0.5,
     thresholdSoftness = 0,
     bokehRotation = 0,
@@ -424,6 +427,7 @@ export function renderBokeh(image, outputCanvas, options = {}) {
     softBokeh,
     saturationWeight,
     bokehDensity,
+    maxBokehCount,
     sampleDetail,
     thresholdSoftness,
     bokehRotation,

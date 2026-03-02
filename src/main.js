@@ -20,6 +20,7 @@ const state = {
     blurQuality: 'standard',
     saturationWeight: 0,
     bokehDensity: 1,
+    maxBokehCount: 800,
     sampleDetail: 0.5,
     thresholdSoftness: 0,
     bokehRotation: 0,
@@ -73,6 +74,7 @@ const jpegQualityEl = $('jpegQuality');
 const blurQualityEl = $('blurQuality');
 const saturationWeightEl = $('saturationWeight');
 const bokehDensityEl = $('bokehDensity');
+const maxBokehCountEl = $('maxBokehCount');
 const sampleDetailEl = $('sampleDetail');
 const previewSizeEl = $('previewSize');
 const thresholdSoftnessEl = $('thresholdSoftness');
@@ -90,6 +92,7 @@ const softBokehValueEl = $('softBokehValue');
 const vignetteValueEl = $('vignetteValue');
 const saturationWeightValueEl = $('saturationWeightValue');
 const bokehDensityValueEl = $('bokehDensityValue');
+const maxBokehCountValueEl = $('maxBokehCountValue');
 const sampleDetailValueEl = $('sampleDetailValue');
 const thresholdSoftnessValueEl = $('thresholdSoftnessValue');
 const bokehRotationValueEl = $('bokehRotationValue');
@@ -117,6 +120,8 @@ function setImage(img) {
     setViewMode(state.viewMode);
     showTipOnce();
     updateViewerInfo();
+    const zs = document.getElementById('viewerZoomSelect');
+    if (zs) zs.value = state.viewerZoom === 'fit' ? 'fit' : String(state.viewerZoom);
   };
 }
 
@@ -131,11 +136,28 @@ function updateViewerInfo() {
   viewerInfo.textContent = `${w} × ${h}`;
 }
 
-function applyViewerZoom() {
+const ZOOM_LEVELS = ['fit', 50, 75, 100, 125, 150, 200];
+
+function getZoomScale(zoom) {
+  if (zoom === 'fit') return 0;
+  return Number(zoom) / 100;
+}
+
+function getZoomIndex(zoom) {
+  const v = state.viewerZoom;
+  if (v === 'fit') return 0;
+  const i = ZOOM_LEVELS.indexOf(Number(v));
+  return i >= 0 ? i : 3; // default 100%
+}
+
+function applyViewerZoom(zoomToPoint) {
   const viewer = document.getElementById('viewer');
   if (!viewer || !comparison) return;
   const zoom = state.viewerZoom;
-  viewer.classList.toggle('viewer-zoomed', zoom === 100 || zoom === 150);
+  const scale = getZoomScale(zoom);
+  const isZoomed = zoom !== 'fit' && scale > 0;
+  viewer.classList.toggle('viewer-zoomed', isZoomed);
+
   if (zoom === 'fit') {
     comparison.style.width = '';
     comparison.style.height = '';
@@ -143,15 +165,40 @@ function applyViewerZoom() {
     comparison.style.minHeight = '';
     return;
   }
+
   const c = resultCanvas;
   if (!c || !c.width || !c.height) return;
+
   const w = c.width;
   const h = c.height;
-  const scale = zoom === 150 ? 1.5 : 1;
   comparison.style.width = `${w * scale}px`;
   comparison.style.height = `${h * scale}px`;
   comparison.style.minWidth = `${w * scale}px`;
   comparison.style.minHeight = `${h * scale}px`;
+
+  if (zoomToPoint && isZoomed) {
+    const { x, y, oldScale } = zoomToPoint;
+    if (oldScale > 0) {
+      requestAnimationFrame(() => {
+        viewer.scrollLeft = (viewer.scrollLeft + x) * (scale / oldScale) - x;
+        viewer.scrollTop = (viewer.scrollTop + y) * (scale / oldScale) - y;
+      });
+    }
+  }
+}
+
+function setViewerZoom(value, zoomToPoint) {
+  state.viewerZoom = value === 'fit' ? 'fit' : Number(value);
+  const sel = document.getElementById('viewerZoomSelect');
+  if (sel) sel.value = String(state.viewerZoom);
+  applyViewerZoom(zoomToPoint);
+}
+
+function stepViewerZoom(direction, zoomToPoint) {
+  const i = getZoomIndex(state.viewerZoom);
+  const next = direction > 0 ? Math.min(i + 1, ZOOM_LEVELS.length - 1) : Math.max(i - 1, 0);
+  const nextVal = ZOOM_LEVELS[next];
+  setViewerZoom(nextVal === 'fit' ? 'fit' : nextVal, zoomToPoint);
 }
 
 function loadFile(file) {
@@ -223,6 +270,7 @@ function syncControlsFromState() {
   }
   if (saturationWeightEl) saturationWeightEl.value = o.saturationWeight ?? 0;
   if (bokehDensityEl) bokehDensityEl.value = o.bokehDensity ?? 1;
+  if (maxBokehCountEl) maxBokehCountEl.value = o.maxBokehCount ?? 800;
   if (sampleDetailEl) sampleDetailEl.value = o.sampleDetail ?? 0.5;
   if (thresholdSoftnessEl) thresholdSoftnessEl.value = o.thresholdSoftness ?? 0;
   if (bokehRotationEl) bokehRotationEl.value = o.bokehRotation ?? 0;
@@ -238,6 +286,7 @@ function syncControlsFromState() {
   if (vignetteValueEl) vignetteValueEl.textContent = Math.round((o.vignette ?? 0) * 100) + '%';
   if (saturationWeightValueEl) saturationWeightValueEl.textContent = Math.round((o.saturationWeight ?? 0) * 100) + '%';
   if (bokehDensityValueEl) bokehDensityValueEl.textContent = (o.bokehDensity ?? 1).toFixed(1) + '×';
+  if (maxBokehCountValueEl) maxBokehCountValueEl.textContent = o.maxBokehCount ?? 800;
   if (sampleDetailValueEl) sampleDetailValueEl.textContent = Math.round((o.sampleDetail ?? 0.5) * 100) + '%';
   if (thresholdSoftnessValueEl) thresholdSoftnessValueEl.textContent = Math.round((o.thresholdSoftness ?? 0) * 100) + '%';
   if (bokehRotationValueEl) bokehRotationValueEl.textContent = Math.round(o.bokehRotation ?? 0) + '°';
@@ -259,6 +308,7 @@ function syncStateFromControls() {
     blurQuality: blurQualityEl?.value || 'standard',
     saturationWeight: Number(saturationWeightEl?.value ?? 0),
     bokehDensity: Number(bokehDensityEl?.value ?? 1),
+    maxBokehCount: Number(maxBokehCountEl?.value ?? 800),
     sampleDetail: Number(sampleDetailEl?.value ?? 0.5),
     thresholdSoftness: Number(thresholdSoftnessEl?.value ?? 0),
     bokehRotation: Number(bokehRotationEl?.value ?? 0),
@@ -479,6 +529,7 @@ addSliderReset(softBokehEl, softBokehValueEl, 'softBokeh', 0, (v) => Math.round(
 addSliderReset(vignetteEl, vignetteValueEl, 'vignette', 0, (v) => Math.round(Number(v) * 100) + '%');
 addSliderReset(saturationWeightEl, saturationWeightValueEl, 'saturationWeight', 0, (v) => Math.round(Number(v) * 100) + '%');
 addSliderReset(bokehDensityEl, bokehDensityValueEl, 'bokehDensity', 1, (v) => Number(v).toFixed(1) + '×');
+addSliderReset(maxBokehCountEl, maxBokehCountValueEl, 'maxBokehCount', 800);
 addSliderReset(sampleDetailEl, sampleDetailValueEl, 'sampleDetail', 0.5, (v) => Math.round(Number(v) * 100) + '%');
 addSliderReset(thresholdSoftnessEl, thresholdSoftnessValueEl, 'thresholdSoftness', 0, (v) => Math.round(Number(v) * 100) + '%');
 addSliderReset(bokehRotationEl, bokehRotationValueEl, 'bokehRotation', 0, (v) => Math.round(Number(v)) + '°');
@@ -509,6 +560,7 @@ if (blurQualityEl) blurQualityEl.addEventListener('change', () => render());
 if (previewSizeEl) previewSizeEl.addEventListener('change', () => render());
 if (saturationWeightEl) saturationWeightEl.addEventListener('input', () => { if (saturationWeightValueEl) saturationWeightValueEl.textContent = Math.round(Number(saturationWeightEl.value) * 100) + '%'; render({ debounce: true }); });
 if (bokehDensityEl) bokehDensityEl.addEventListener('input', () => { if (bokehDensityValueEl) bokehDensityValueEl.textContent = Number(bokehDensityEl.value).toFixed(1) + '×'; render({ debounce: true }); });
+if (maxBokehCountEl) maxBokehCountEl.addEventListener('input', () => { if (maxBokehCountValueEl) maxBokehCountValueEl.textContent = maxBokehCountEl.value; render({ debounce: true }); });
 if (sampleDetailEl) sampleDetailEl.addEventListener('input', () => { if (sampleDetailValueEl) sampleDetailValueEl.textContent = Math.round(Number(sampleDetailEl.value) * 100) + '%'; render({ debounce: true }); });
 if (thresholdSoftnessEl) thresholdSoftnessEl.addEventListener('input', () => { if (thresholdSoftnessValueEl) thresholdSoftnessValueEl.textContent = Math.round(Number(thresholdSoftnessEl.value) * 100) + '%'; render({ debounce: true }); });
 if (bokehRotationEl) bokehRotationEl.addEventListener('input', () => { if (bokehRotationValueEl) bokehRotationValueEl.textContent = Math.round(Number(bokehRotationEl.value)) + '°'; render({ debounce: true }); });
@@ -547,6 +599,7 @@ const DEFAULT_OPTIONS = {
   blurQuality: 'standard',
   saturationWeight: 0,
   bokehDensity: 1,
+  maxBokehCount: 800,
   sampleDetail: 0.5,
   thresholdSoftness: 0,
   bokehRotation: 0,
@@ -566,6 +619,7 @@ const SLIDER_DEFAULTS = {
   vignette: 0,
   saturationWeight: 0,
   bokehDensity: 1,
+  maxBokehCount: 800,
   sampleDetail: 0.5,
   thresholdSoftness: 0,
   bokehRotation: 0,
@@ -749,6 +803,12 @@ document.addEventListener('keydown', (e) => {
   } else if (e.key === 'f' || e.key === 'F') {
     if (state.image && document.fullscreenElement) document.exitFullscreen?.();
     else if (state.image) document.getElementById('viewer')?.requestFullscreen?.();
+  } else if ((e.key === '=' || e.key === '+') && !e.shiftKey) {
+    if (state.image) { e.preventDefault(); stepViewerZoom(1); }
+  } else if (e.key === '-') {
+    if (state.image) { e.preventDefault(); stepViewerZoom(-1); }
+  } else if (e.key === '0') {
+    if (state.image) { e.preventDefault(); setViewerZoom('fit'); }
   }
 });
 
@@ -783,15 +843,33 @@ if (fullscreenBtn && viewerEl) {
   });
 }
 
-// Viewer zoom (Fit, 100%, 150%)
-document.querySelectorAll('.viewer-zoom-btn').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    const zoom = btn.dataset.zoom === 'fit' ? 'fit' : Number(btn.dataset.zoom);
-    state.viewerZoom = zoom;
-    document.querySelectorAll('.viewer-zoom-btn').forEach((b) => b.classList.toggle('active', b === btn));
-    applyViewerZoom();
+// Viewer zoom: select + zoom in/out buttons
+const viewerZoomSelect = document.getElementById('viewerZoomSelect');
+const viewerZoomInBtn = document.getElementById('viewerZoomIn');
+const viewerZoomOutBtn = document.getElementById('viewerZoomOut');
+
+if (viewerZoomSelect) {
+  viewerZoomSelect.addEventListener('change', () => {
+    const val = viewerZoomSelect.value;
+    setViewerZoom(val);
   });
-});
+}
+if (viewerZoomInBtn) viewerZoomInBtn.addEventListener('click', () => stepViewerZoom(1));
+if (viewerZoomOutBtn) viewerZoomOutBtn.addEventListener('click', () => stepViewerZoom(-1));
+
+// Ctrl+wheel over viewer: zoom in/out toward cursor
+if (viewerEl) {
+  viewerEl.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey || !state.image) return;
+    e.preventDefault();
+    const rect = viewerEl.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const oldScale = getZoomScale(state.viewerZoom);
+    if (e.deltaY < 0) stepViewerZoom(1, oldScale > 0 ? { x, y, oldScale } : null);
+    else stepViewerZoom(-1, oldScale > 0 ? { x, y, oldScale } : null);
+  }, { passive: false });
+}
 
 // Preview full resolution (one-time render at full res in the main canvas)
 const previewFullResBtn = document.getElementById('previewFullResBtn');
@@ -859,6 +937,7 @@ function paramsFromOptions() {
     q: o.blurQuality,
     sw: o.saturationWeight,
     bd: o.bokehDensity,
+    mb: o.maxBokehCount,
     sd: o.sampleDetail,
     ts: o.thresholdSoftness,
     rot: o.bokehRotation,
@@ -883,6 +962,7 @@ function optionsFromParams(params) {
   if (params.q) o.blurQuality = params.q;
   if (params.sw != null) o.saturationWeight = Number(params.sw);
   if (params.bd != null) o.bokehDensity = Number(params.bd);
+  if (params.mb != null) o.maxBokehCount = Number(params.mb);
   if (params.sd != null) o.sampleDetail = Number(params.sd);
   if (params.ts != null) o.thresholdSoftness = Number(params.ts);
   if (params.rot != null) o.bokehRotation = Number(params.rot);
@@ -931,26 +1011,15 @@ document.getElementById('exportBeforeAfterBtn')?.addEventListener('click', () =>
   a.click();
 });
 
-// Settings bar position (left, right, top, bottom)
-const SETTINGS_POSITION_KEY = 'boken-settings-position';
+// Settings bar fixed on the right
 function applySettingsPosition() {
-  const sel = document.getElementById('settingsPosition');
-  const position = (sel && sel.value) || 'right';
   if (!workspace) return;
-  workspace.classList.remove('controls-position-left', 'controls-position-right', 'controls-position-top', 'controls-position-bottom');
-  workspace.classList.add('controls-position-' + position);
-  try { localStorage.setItem(SETTINGS_POSITION_KEY, position); } catch (_) {}
+  workspace.classList.remove('controls-position-left', 'controls-position-top', 'controls-position-bottom');
+  workspace.classList.add('controls-position-right');
 }
 function loadSettingsPosition() {
-  try {
-    const saved = localStorage.getItem(SETTINGS_POSITION_KEY);
-    const sel = document.getElementById('settingsPosition');
-    if (sel && (saved === 'left' || saved === 'right' || saved === 'top' || saved === 'bottom')) sel.value = saved;
-  } catch (_) {}
   applySettingsPosition();
 }
-const settingsPositionEl = document.getElementById('settingsPosition');
-if (settingsPositionEl) settingsPositionEl.addEventListener('change', applySettingsPosition);
 
 // Load last options and URL params on startup
 loadLastOptions();

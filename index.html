@@ -42,11 +42,20 @@
         <div class="viewer" id="viewer">
             <div class="viewer-toolbar">
               <span class="viewer-zoom-label">Zoom</span>
-              <div class="viewer-zoom-btns" role="group" aria-label="Viewer zoom">
-                <button type="button" class="viewer-zoom-btn active" data-zoom="fit" title="Fit to view">Fit</button>
-                <button type="button" class="viewer-zoom-btn" data-zoom="100" title="100% (1:1 pixels)">100%</button>
-                <button type="button" class="viewer-zoom-btn" data-zoom="150" title="150%">150%</button>
+              <div class="viewer-zoom-controls" role="group" aria-label="Viewer zoom">
+                <button type="button" class="viewer-zoom-btn" id="viewerZoomOut" title="Zoom out (Ctrl+scroll)" aria-label="Zoom out">−</button>
+                <select id="viewerZoomSelect" class="viewer-zoom-select" title="Zoom level. Ctrl+scroll over image to zoom." aria-label="Zoom level">
+                  <option value="fit">Fit</option>
+                  <option value="50">50%</option>
+                  <option value="75">75%</option>
+                  <option value="100">100%</option>
+                  <option value="125">125%</option>
+                  <option value="150">150%</option>
+                  <option value="200">200%</option>
+                </select>
+                <button type="button" class="viewer-zoom-btn" id="viewerZoomIn" title="Zoom in (Ctrl+scroll)" aria-label="Zoom in">+</button>
               </div>
+              <span class="viewer-zoom-hint" aria-hidden="true">Ctrl+scroll over image</span>
               <button type="button" class="btn btn-secondary btn-sm" id="previewFullResBtn" title="Re-render preview at full resolution (may be slow)">Preview full res</button>
             </div>
           <div class="comparison view-split" id="comparison" data-view="split">
@@ -72,17 +81,6 @@
               <option value="1200" selected>Standard (1200px)</option>
               <option value="2400">Large (2400px)</option>
               <option value="full">Full resolution</option>
-            </select>
-          </div>
-          <div class="control-group settings-position-group">
-            <label>
-              <span class="label-text">Settings position</span>
-            </label>
-            <select id="settingsPosition" title="Where to show the settings bar">
-              <option value="top">Top</option>
-              <option value="right" selected>Right</option>
-              <option value="bottom">Bottom</option>
-              <option value="left">Left</option>
             </select>
           </div>
           <div class="control-group">
@@ -133,7 +131,14 @@
               <span class="label-text">Bokeh density</span>
               <span class="label-value" id="bokehDensityValue">1×</span>
             </label>
-            <input type="range" id="bokehDensity" min="0.25" max="2" step="0.05" value="1" title="Max number of bokeh blobs (sparse to dense)" />
+            <input type="range" id="bokehDensity" min="0.25" max="2" step="0.05" value="1" title="Scale for max bokeh count (sparse to dense)" />
+          </div>
+          <div class="control-group">
+            <label>
+              <span class="label-text">Max bokeh count</span>
+              <span class="label-value" id="maxBokehCountValue">800</span>
+            </label>
+            <input type="range" id="maxBokehCount" min="50" max="2500" step="50" value="800" title="Maximum number of bokeh shapes to draw" />
           </div>
           <div class="control-group">
             <label>
