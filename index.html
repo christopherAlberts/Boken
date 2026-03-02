@@ -2,34 +2,54 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0d0d12" />
   <title>Boken — Bokeh Blur</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="stylesheet" href="./src/style.css" />
 </head>
 <body>
   <div id="app">
     <header class="header">
       <h1 class="logo">Boken</h1>
       <p class="tagline">Transform any image with bokeh blur</p>
+      <button type="button" class="theme-toggle" id="themeToggle" title="Toggle light/dark theme" aria-label="Toggle theme"><span class="theme-icon">🌙</span></button>
     </header>
 
     <main class="main">
       <section class="upload-zone" id="uploadZone" data-state="empty">
-        <input type="file" id="fileInput" accept="image/*" hidden />
+        <input type="file" id="fileInput" accept="image/*,.jpg,.jpeg,image/jpeg,image/png,image/webp" hidden />
         <input type="url" id="urlInput" class="url-input" placeholder="Or paste image URL..." />
         <div class="upload-content">
           <div class="upload-icon">📷</div>
           <p class="upload-text">Drop an image here, or <button type="button" class="btn-link" id="browseBtn">browse</button></p>
-          <p class="upload-hint">PNG, JPEG, WebP • Max 20MB</p>
+          <p class="upload-hint">JPG, PNG, JPEG, WebP • Max 100MB</p>
+          <button type="button" class="btn btn-sample" id="sampleImageBtn">Try with sample image</button>
         </div>
       </section>
 
-      <section class="workspace hidden" id="workspace">
-        <div class="viewer">
-          <div class="comparison" id="comparison">
+      <section class="workspace controls-position-right hidden" id="workspace">
+        <div class="error-banner hidden" id="errorBanner" role="alert">
+          <span id="errorMessage"></span>
+          <button type="button" class="error-dismiss" id="errorDismiss" aria-label="Dismiss">×</button>
+        </div>
+        <div class="tip-banner" id="tipBanner" role="status">
+          <span>Drag the divider left or right to compare before and after.</span>
+          <button type="button" class="tip-dismiss" id="tipDismiss" aria-label="Dismiss">×</button>
+        </div>
+        <div class="viewer" id="viewer">
+            <div class="viewer-toolbar">
+              <span class="viewer-zoom-label">Zoom</span>
+              <div class="viewer-zoom-btns" role="group" aria-label="Viewer zoom">
+                <button type="button" class="viewer-zoom-btn active" data-zoom="fit" title="Fit to view">Fit</button>
+                <button type="button" class="viewer-zoom-btn" data-zoom="100" title="100% (1:1 pixels)">100%</button>
+                <button type="button" class="viewer-zoom-btn" data-zoom="150" title="150%">150%</button>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" id="previewFullResBtn" title="Re-render preview at full resolution (may be slow)">Preview full res</button>
+            </div>
+          <div class="comparison view-split" id="comparison" data-view="split">
             <div class="comparison-before" id="comparisonBefore">
               <img id="originalImg" alt="Original" />
             </div>
@@ -41,36 +61,107 @@
             </div>
             <div class="rendering-overlay" id="renderingOverlay" aria-hidden="true">Applying bokeh…</div>
           </div>
+          <p class="viewer-info" id="viewerInfo" aria-live="polite"></p>
         </div>
 
         <aside class="controls">
+          <div class="control-group">
+            <label><span class="label-text">Preview size</span></label>
+            <select id="previewSize" title="Smaller = faster preview, larger = sharper">
+              <option value="600">Fast (600px)</option>
+              <option value="1200" selected>Standard (1200px)</option>
+              <option value="2400">Large (2400px)</option>
+              <option value="full">Full resolution</option>
+            </select>
+          </div>
+          <div class="control-group settings-position-group">
+            <label>
+              <span class="label-text">Settings position</span>
+            </label>
+            <select id="settingsPosition" title="Where to show the settings bar">
+              <option value="top">Top</option>
+              <option value="right" selected>Right</option>
+              <option value="bottom">Bottom</option>
+              <option value="left">Left</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label><span class="label-text">Blur quality</span></label>
+            <select id="blurQuality" title="More passes = smoother, more accurate blur">
+              <option value="fast">Fast (2 passes)</option>
+              <option value="standard" selected>Standard (3 passes)</option>
+              <option value="smooth">Smooth (5 passes)</option>
+            </select>
+          </div>
           <div class="control-group">
             <label>
               <span class="label-text">Blur strength</span>
               <span class="label-value" id="blurValue">12</span>
             </label>
-            <input type="range" id="blurStrength" min="2" max="40" value="12" />
+            <input type="range" id="blurStrength" min="2" max="40" value="12" title="How much the image is blurred" />
           </div>
           <div class="control-group">
             <label>
               <span class="label-text">Bokeh size</span>
               <span class="label-value" id="bokehSizeValue">8</span>
             </label>
-            <input type="range" id="bokehSize" min="2" max="24" value="8" />
+            <input type="range" id="bokehSize" min="2" max="48" value="8" title="Size of the bokeh light circles" />
           </div>
           <div class="control-group">
             <label>
               <span class="label-text">Highlight threshold</span>
               <span class="label-value" id="thresholdValue">0.65</span>
             </label>
-            <input type="range" id="threshold" min="0.2" max="0.95" step="0.05" value="0.65" />
+            <input type="range" id="threshold" min="0.2" max="0.95" step="0.05" value="0.65" title="How bright a pixel must be to become a bokeh highlight" />
+          </div>
+          <div class="control-group">
+            <label>
+              <span class="label-text">Threshold softness</span>
+              <span class="label-value" id="thresholdSoftnessValue">0%</span>
+            </label>
+            <input type="range" id="thresholdSoftness" min="0" max="0.3" step="0.02" value="0" title="Include softer highlights (smoother transition)" />
+          </div>
+          <div class="control-group">
+            <label>
+              <span class="label-text">Saturation weight</span>
+              <span class="label-value" id="saturationWeightValue">0%</span>
+            </label>
+            <input type="range" id="saturationWeight" min="0" max="1" step="0.05" value="0" title="Prefer colored highlights (e.g. lights) over white" />
+          </div>
+          <div class="control-group">
+            <label>
+              <span class="label-text">Bokeh density</span>
+              <span class="label-value" id="bokehDensityValue">1×</span>
+            </label>
+            <input type="range" id="bokehDensity" min="0.25" max="2" step="0.05" value="1" title="Max number of bokeh blobs (sparse to dense)" />
+          </div>
+          <div class="control-group">
+            <label>
+              <span class="label-text">Sample detail</span>
+              <span class="label-value" id="sampleDetailValue">50%</span>
+            </label>
+            <input type="range" id="sampleDetail" min="0" max="1" step="0.05" value="0.5" title="Finer = more bokeh candidates, slower" />
           </div>
           <div class="control-group">
             <label>
               <span class="label-text">Bokeh intensity</span>
               <span class="label-value" id="intensityValue">1.2</span>
             </label>
-            <input type="range" id="intensity" min="0.2" max="2.5" step="0.1" value="1.2" />
+            <input type="range" id="intensity" min="0.2" max="2.5" step="0.1" value="1.2" title="Strength of the bokeh overlay" />
+          </div>
+          <div class="control-group">
+            <label>
+              <span class="label-text">Size variation</span>
+              <span class="label-value" id="sizeVariationValue">0%</span>
+            </label>
+            <input type="range" id="sizeVariation" min="0" max="1" step="0.05" value="0" title="Mix of small and large bokeh (0 = uniform, 100% = many sizes at once)" />
+          </div>
+          <div class="control-group">
+            <label>
+              <span class="label-text">Intensity variation</span>
+              <span class="label-value" id="intensityVariationValue">0%</span>
+            </label>
+            <input type="range" id="intensityVariation" min="0" max="1" step="0.05" value="0" title="Mix of strong and soft bokeh — higher = more range (some blobs faint, others bright)" />
           </div>
           <div class="control-group">
             <label>
@@ -80,7 +171,65 @@
               <option value="circle">Circle</option>
               <option value="hexagon">Hexagon</option>
               <option value="pentagon">Pentagon</option>
+              <option value="donut">Donut (ring)</option>
             </select>
+          </div>
+          <div class="control-group">
+            <label>
+              <span class="label-text">Bokeh rotation</span>
+              <span class="label-value" id="bokehRotationValue">0°</span>
+            </label>
+            <input type="range" id="bokehRotation" min="0" max="360" value="0" title="Rotate polygon bokeh shapes (degrees)" />
+          </div>
+          <label class="checkbox-label">
+            <input type="checkbox" id="bokehRotationRandom" title="Random rotation per bokeh" />
+            <span>Random bokeh rotation</span>
+          </label>
+          <div class="control-group">
+            <label>
+              <span class="label-text">Color style</span>
+            </label>
+            <select id="colorStyle" title="Tint and bokeh color treatment">
+              <option value="natural">Natural</option>
+              <option value="warm">Warm glow</option>
+              <option value="cool">Cool tone</option>
+              <option value="vintage">Vintage</option>
+              <option value="cinematic">Cinematic</option>
+              <option value="pastel">Pastel dream</option>
+              <option value="vivid">Vivid</option>
+              <option value="golden">Golden hour</option>
+              <option value="nocturne">Nocturne</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>
+              <span class="label-text">Soft bokeh</span>
+              <span class="label-value" id="softBokehValue">0%</span>
+            </label>
+            <input type="range" id="softBokeh" min="0" max="1" step="0.05" value="0" title="Softer bokeh edges (more lens-like)" />
+          </div>
+          <div class="control-group">
+            <label>
+              <span class="label-text">Vignette</span>
+              <span class="label-value" id="vignetteValue">0%</span>
+            </label>
+            <input type="range" id="vignette" min="0" max="1" step="0.05" value="0" title="Darken edges" />
+          </div>
+          <div class="control-group">
+            <label>
+              <span class="label-text">Chromatic aberration</span>
+              <span class="label-value" id="chromaticAberrationValue">0%</span>
+            </label>
+            <input type="range" id="chromaticAberration" min="0" max="1" step="0.05" value="0" title="Lens-like RGB fringing (stronger at edges)" />
+          </div>
+
+          <div class="view-mode" role="group" aria-label="View mode">
+            <span class="presets-label">View</span>
+            <div class="view-mode-btns">
+              <button type="button" class="view-mode-btn active" data-view="split" title="Split comparison">Split</button>
+              <button type="button" class="view-mode-btn" data-view="original" title="Original only">Original</button>
+              <button type="button" class="view-mode-btn" data-view="result" title="Result only">Result</button>
+            </div>
           </div>
 
           <div class="presets">
@@ -92,12 +241,42 @@
               <button type="button" class="preset-btn" data-preset="subtle">Subtle</button>
               <button type="button" class="preset-btn" data-preset="vintage">Vintage</button>
             </div>
+            <div class="custom-presets" id="customPresetsContainer"></div>
+            <button type="button" class="btn btn-secondary btn-sm" id="savePresetBtn">Save current as preset</button>
           </div>
 
+          <div class="export-options">
+            <label class="export-quality-label">
+              <span>JPEG quality</span>
+              <select id="jpegQuality">
+                <option value="0.8">80%</option>
+                <option value="0.9">90%</option>
+                <option value="0.92" selected>92%</option>
+                <option value="0.95">95%</option>
+                <option value="1">100%</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="actions-row actions-row-multi">
+            <button type="button" class="btn btn-secondary btn-sm" id="resetDefaultsBtn" title="Reset all sliders to default">Reset defaults</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="exportSettingsBtn" title="Download current settings as JSON">Export settings</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="importSettingsBtn" title="Load settings from a JSON file">Import settings</button>
+            <input type="file" id="importSettingsInput" accept=".json,application/json" hidden />
+            <button type="button" class="btn btn-secondary btn-sm" id="shareLinkBtn" title="Copy a link that opens the app with these settings">Copy share link</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="exportBeforeAfterBtn" title="Download one image: original left, result right">Export before/after</button>
+          </div>
+
+          <label class="full-res-label">
+            <input type="checkbox" id="fullResCheckbox" />
+            <span>Export at full resolution</span>
+          </label>
           <div class="actions">
-            <button type="button" class="btn btn-secondary" id="newImageBtn">New image</button>
-            <button type="button" class="btn btn-primary" id="downloadPng">Download PNG</button>
-            <button type="button" class="btn btn-primary" id="downloadJpeg">Download JPEG</button>
+            <button type="button" class="btn btn-secondary" id="newImageBtn" title="Load a different image (Esc)">New image</button>
+            <button type="button" class="btn btn-primary" id="downloadPng" title="Download as PNG (D)">Download PNG</button>
+            <button type="button" class="btn btn-primary" id="downloadJpeg" title="Download as JPEG">Download JPEG</button>
+            <button type="button" class="btn btn-primary" id="downloadWebp" title="Download as WebP">Download WebP</button>
+            <button type="button" class="btn btn-secondary" id="copyImageBtn" title="Copy image to clipboard">Copy image</button>
           </div>
         </aside>
       </section>
@@ -107,6 +286,6 @@
       <p>Boken · Bokeh blur in the browser · No data leaves your device</p>
     </footer>
   </div>
-  <script type="module" src="/src/main.js"></script>
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>
