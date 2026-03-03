@@ -132,8 +132,8 @@ function gaussianBlur(ctx, width, height, radius, numPasses = 3) {
   const buf2 = document.createElement('canvas');
   buf2.width = width;
   buf2.height = height;
-  const c1 = buf1.getContext('2d');
-  const c2 = buf2.getContext('2d');
+  const c1 = buf1.getContext('2d', { willReadFrequently: true });
+  const c2 = buf2.getContext('2d', { willReadFrequently: true });
   c1.drawImage(ctx.canvas, 0, 0);
   for (let p = 0; p < passes; p++) {
     boxBlurPass(c1, c2, width, height, r, true);
@@ -393,13 +393,13 @@ export function renderBokeh(image, outputCanvas, options = {}) {
 
   outputCanvas.width = width;
   outputCanvas.height = height;
-  const ctx = outputCanvas.getContext('2d');
+  const ctx = outputCanvas.getContext('2d', { willReadFrequently: true });
 
   // Work canvas for blur
   const work = document.createElement('canvas');
   work.width = width;
   work.height = height;
-  const wctx = work.getContext('2d');
+  const wctx = work.getContext('2d', { willReadFrequently: true });
   wctx.drawImage(image, 0, 0, width, height);
 
   const blurPasses = blurQuality === 'smooth' ? 5 : blurQuality === 'fast' ? 2 : 3;
@@ -413,7 +413,7 @@ export function renderBokeh(image, outputCanvas, options = {}) {
   const origCanvas = document.createElement('canvas');
   origCanvas.width = width;
   origCanvas.height = height;
-  const origCtx = origCanvas.getContext('2d');
+  const origCtx = origCanvas.getContext('2d', { willReadFrequently: true });
   origCtx.drawImage(image, 0, 0, width, height);
   const originalData = origCtx.getImageData(0, 0, width, height);
   extractAndDrawBokeh(wctx, ctx, width, height, {

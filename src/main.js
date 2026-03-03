@@ -176,15 +176,25 @@ function applyViewerZoom(zoomToPoint) {
   comparison.style.minWidth = `${w * scale}px`;
   comparison.style.minHeight = `${h * scale}px`;
 
-  if (zoomToPoint && isZoomed) {
-    const { x, y, oldScale } = zoomToPoint;
-    if (oldScale > 0) {
-      requestAnimationFrame(() => {
-        viewer.scrollLeft = (viewer.scrollLeft + x) * (scale / oldScale) - x;
-        viewer.scrollTop = (viewer.scrollTop + y) * (scale / oldScale) - y;
-      });
+  function centerZoomedContent() {
+      if (zoomToPoint && isZoomed) {
+        const { x, y, oldScale } = zoomToPoint;
+        if (oldScale > 0) {
+          viewer.scrollLeft = (viewer.scrollLeft + x) * (scale / oldScale) - x;
+          viewer.scrollTop = (viewer.scrollTop + y) * (scale / oldScale) - y;
+        }
+      } else if (isZoomed) {
+        const contentW = comparison.scrollWidth;
+        const contentH = comparison.scrollHeight;
+        const viewW = viewer.clientWidth;
+        const viewH = viewer.clientHeight;
+        viewer.scrollLeft = Math.max(0, (contentW - viewW) / 2);
+        viewer.scrollTop = Math.max(0, (contentH - viewH) / 2);
+      }
     }
-  }
+  requestAnimationFrame(() => {
+    requestAnimationFrame(centerZoomedContent);
+  });
 }
 
 function setViewerZoom(value, zoomToPoint) {

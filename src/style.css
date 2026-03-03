@@ -483,6 +483,7 @@ body {
 .viewer-zoom-hint {
   font-size: 0.75rem;
   color: var(--text-muted);
+  margin-left: auto;
 }
 
 .viewer-info {
@@ -495,6 +496,10 @@ body {
 
 .viewer.viewer-zoomed {
   overflow: auto;
+}
+.viewer.viewer-zoomed .comparison {
+  flex: 0 0 auto;
+  margin: auto;
 }
 
 .rendering-overlay {
